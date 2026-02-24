@@ -1,50 +1,86 @@
-import Foundation
 import UserNotifications
 
 class NotificationManager {
-    
+
     static let shared = NotificationManager()
-    
-    private init() {}
-    
-    // Request permission
+
     func requestPermission() {
-        UNUserNotificationCenter.current()
-            .requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-                
-                if granted {
-                    print("Notification permission granted")
-                } else {
-                    print("Notification permission denied")
-                }
+        UNUserNotificationCenter.current().requestAuthorization(
+            options: [.alert, .sound, .badge]
+        ) { granted, error in
+            if granted {
+                print("Permission granted")
             }
+        }
     }
-    
-    // Simple test notification (5 seconds)
-    func sendTestNotification() {
-        
+
+    func scheduleNotification(title: String, date: Date) {
+
         let content = UNMutableNotificationContent()
-        content.title = "Test Notification"
-        content.body = "This is a local notification test."
+        content.title = title
+        content.body = "Don't forget 💚"
         content.sound = .default
-        
-        let trigger = UNTimeIntervalNotificationTrigger(
-            timeInterval: 5,
+
+        let components = Calendar.current.dateComponents(
+            [.year, .month, .day, .hour, .minute],
+            from: date
+        )
+
+        let trigger = UNCalendarNotificationTrigger(
+            dateMatching: components,
             repeats: false
         )
-        
+
         let request = UNNotificationRequest(
             identifier: UUID().uuidString,
             content: content,
             trigger: trigger
         )
+
+        UNUserNotificationCenter.current().add(request)
+    }
+    
+    func scheduleReminder(from reminder: ReminderItem) {
         
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Error:", error)
-            } else {
-                print("Test notification scheduled")
-            }
+        let content = UNMutableNotificationContent()
+        content.title = reminder.title
+        content.body = "Take a moment 💚"
+        content.sound = .default
+        
+        let components: DateComponents
+        
+        switch reminder.repeats {
+            
+        case .none:
+            components = Calendar.current.dateComponents(
+                [.year, .month, .day, .hour, .minute],
+                from: reminder.date
+            )
+            
+        case .daily:
+            components = Calendar.current.dateComponents(
+                [.hour, .minute],
+                from: reminder.date
+            )
+            
+        case .weekly:
+            components = Calendar.current.dateComponents(
+                [.weekday, .hour, .minute],
+                from: reminder.date
+            )
         }
+        
+        let trigger = UNCalendarNotificationTrigger(
+            dateMatching: components,
+            repeats: reminder.repeats != .none
+        )
+        
+        let request = UNNotificationRequest(
+            identifier: reminder.id.uuidString,
+            content: content,
+            trigger: trigger
+        )
+        
+        UNUserNotificationCenter.current().add(request)
     }
 }
