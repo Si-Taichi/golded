@@ -24,11 +24,11 @@ class MoodManager {
     }
 
     func hasAnsweredToday(for period: CheckInPeriod) -> Bool {
-    let entries = loadEntries()
-    
-    return entries.contains { entry in
-        let isSameDay = Calendar.current.isDateInToday(entry.date)
-        return isSameDay && entry.period == period.rawValue
+        let entries = loadEntries()
+        
+        return entries.contains { entry in
+            Calendar.current.isDateInToday(entry.date) &&
+            entry.period == period.rawValue
+        }
     }
-}
 }
