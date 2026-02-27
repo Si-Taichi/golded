@@ -1,9 +1,9 @@
 import UserNotifications
 
 class NotificationManager {
-
+    
     static let shared = NotificationManager()
-
+    
     func requestPermission() {
         UNUserNotificationCenter.current().requestAuthorization(
             options: [.alert, .sound, .badge]
@@ -13,30 +13,30 @@ class NotificationManager {
             }
         }
     }
-
+    
     func scheduleNotification(title: String, date: Date) {
-
+        
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = "Don't forget 💚"
         content.sound = .default
-
+        
         let components = Calendar.current.dateComponents(
             [.year, .month, .day, .hour, .minute],
             from: date
         )
-
+        
         let trigger = UNCalendarNotificationTrigger(
             dateMatching: components,
             repeats: false
         )
-
+        
         let request = UNNotificationRequest(
             identifier: UUID().uuidString,
             content: content,
             trigger: trigger
         )
-
+        
         UNUserNotificationCenter.current().add(request)
     }
     
