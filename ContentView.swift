@@ -161,11 +161,104 @@ struct MindView: View {
     var body: some View {
         NavigationView {
             VStack {
-                Text("Mental Wellness")
-                    .font(.title)
+                MentalStatusCard(
+                    message: MoodManager.shared.mentalStatusMessage()
+                )
+                ActivityCard(
+                    title: "Breathing Exercise",
+                    description: "Slow breathing to calm yourself and your body.",
+                    buttonTitle: "Go Now",
+                    preview: MiniBreathingPreview(),
+                    destination: BreathingView()
+                )
+                
+                ActivityCard(
+                    title: "Grounding",
+                    description: "Check out your surroundings.",
+                    buttonTitle: "Go now",
+                    preview: GroundingPreview(),
+                    destination: GroundingView()
+
+                )
+                
+                ActivityCard(
+                    title: "Tiny Win Today",
+                    description: "What's the thing you're the most proud of today?",
+                    buttonTitle: "Try Now",
+                    preview: TinyWinsPreview(),
+                    destination: TinyWinsView()
+
+                )
             }
             .navigationTitle("Mind")
         }
+    }
+}
+
+struct MentalStatusCard: View {
+    
+    var message: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            
+            Text("Mental Status")
+                .font(.headline)
+            
+            Text(message)
+                .font(.subheadline)
+                .foregroundColor(.gray)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.green.opacity(0.08))
+        .cornerRadius(20)
+        .padding(.horizontal)
+    }
+}
+
+struct ActivityCard<Preview: View, Destination: View>: View {
+    
+    var title: String
+    var description: String
+    var buttonTitle: String
+    var preview: Preview
+    var destination: Destination
+    
+    var body: some View {
+        HStack(spacing: 15) {
+            
+            preview
+                .frame(width: 60, height: 60)
+            
+            VStack(alignment: .leading, spacing: 6) {
+                
+                Text(title)
+                    .font(.headline)
+                
+                Text(description)
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                
+                NavigationLink(destination: destination) {
+                    Text(buttonTitle)
+                        .font(.caption)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.blue, lineWidth: 1)
+                        )
+                }
+                .padding(.top, 4)
+            }
+            
+            Spacer()
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(20)
+        .padding(.horizontal)
     }
 }
 
@@ -176,70 +269,88 @@ struct HealthView: View {
     
     var body: some View {
         NavigationView {
-            VStack {
+            ZStack {
                 
-                if let result = healthResult {
-                    HealthStatusView(result: result).padding(.horizontal)
-                }
-                else {
-                    Text("No health data avaliable.")
-                        .foregroundColor(.gray)
-                        .padding()
-                }
-                
-                if entries.isEmpty {
-                    Text("No health records yet.")
-                        .foregroundColor(.gray)
-                        .padding()
-                } else {
-                    List {
-                        ForEach(entries) { entry in
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(entry.date.formatted(date: .abbreviated, time: .shortened))
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
-                                
-                                if let sugar = entry.bloodSugar {
-                                    Text("Blood Sugar: \(sugar)")
+                VStack {
+                    
+                    if let result = healthResult {
+                        HealthStatusView(result: result)
+                            .padding(.horizontal)
+                    } else {
+                        Text("No health data available.")
+                            .foregroundColor(.gray)
+                            .padding()
+                    }
+                    
+                    if entries.isEmpty {
+                        Text("No health records yet.")
+                            .foregroundColor(.gray)
+                            .padding()
+                    } else {
+                        List {
+                            ForEach(entries) { entry in
+                                VStack(alignment: .leading, spacing: 4) {
+                                    
+                                    Text(entry.date.formatted(date: .abbreviated, time: .shortened))
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                    
+                                    if let sugar = entry.bloodSugar {
+                                        Text("Blood Sugar: \(sugar)")
+                                    }
+                                    
+                                    if let pressure = entry.bloodPressure {
+                                        Text("Blood Pressure: \(pressure)")
+                                    }
+                                    
+                                    if let cholesterol = entry.cholesterol {
+                                        Text("Total Cholesterol: \(cholesterol)")
+                                    }
+                                    
+                                    if let hdl = entry.hdl {
+                                        Text("HDL: \(hdl)")
+                                    }
+                                    
+                                    if let ldl = entry.ldl {
+                                        Text("LDL: \(ldl)")
+                                    }
+                                    
+                                    if let triglyceride = entry.triglyceride {
+                                        Text("Triglyceride: \(triglyceride)")
+                                    }
+                                    
+                                    Text("BMI: \(String(format: "%.1f", entry.bmi))")
+                                        .foregroundColor(.secondary)
                                 }
-                                
-                                if let pressure = entry.bloodPressure {
-                                    Text("Blood Pressure: \(pressure)")
-                                }
-                                
-                                if let cholesterol = entry.cholesterol {
-                                    Text("Total Cholesterol: \(cholesterol)")
-                                }
-                                
-                                if let hdl = entry.hdl {
-                                    Text("HDL: \(hdl)")
-                                }
-                                
-                                if let ldl = entry.ldl {
-                                    Text("LDL: \(ldl)")
-                                }
-                                
-                                if let triglyceride = entry.triglyceride {
-                                    Text("Triglyceride: \(triglyceride)")
-                                }
-                                
-                                Text("BMI: \(String(format: "%.1f", entry.bmi))")
-                                    .foregroundColor(.secondary)
                             }
                         }
                     }
                 }
-            }
-            .navigationTitle("Health")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showAddEntry = true
-                    } label: {
-                        Image(systemName: "plus").padding(20)
+                
+                // Floating Button
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        
+                        Button {
+                            showAddEntry = true
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.title2)
+                                .foregroundColor(.white)
+                                .frame(width: 60, height: 60)
+                                .background(
+                                    Circle()
+                                        .fill(Color.blue)
+                                        .shadow(color: .black.opacity(0.2), radius: 5)
+                                )
+                        }
+                        .padding()
                     }
                 }
             }
+            .navigationTitle("Health")
             .onAppear {
                 entries = HealthEntryManager.shared.loadEntries()
             }
@@ -250,31 +361,31 @@ struct HealthView: View {
             }
         }
     }
+    
     var healthResult: HealthResult? {
         
-        guard let latest = entries.sorted(by: { $0.date > $1.date }).first,
-              let cholesterol = Double(latest.cholesterol ?? ""),
-              let hdl = Double(latest.hdl ?? ""),
-              let ldl = Double(latest.ldl ?? ""),
-              let triglyceride = Double(latest.triglyceride ?? "")
-        else {
+        guard let latest = entries.sorted(by: { $0.date > $1.date }).first else {
             return nil
         }
         
-        // Split blood pressure
-        var systolic: Double = 0
-        var diastolic: Double = 0
+        let cholesterol = Double(latest.cholesterol ?? "")
+        let hdl = Double(latest.hdl ?? "")
+        let ldl = Double(latest.ldl ?? "")
+        let triglyceride = Double(latest.triglyceride ?? "")
+        
+        var systolic: Double?
+        var diastolic: Double?
         
         if let bp = latest.bloodPressure {
             let parts = bp.split(separator: "/")
             if parts.count == 2 {
-                systolic = Double(parts[0]) ?? 0
-                diastolic = Double(parts[1]) ?? 0
+                systolic = Double(parts[0])
+                diastolic = Double(parts[1])
             }
         }
         
         return HealthEvaluator.evaluate(
-            gender: .male, // 🔥 change later to real stored gender
+            gender: .male,
             cholesterol: cholesterol,
             hdl: hdl,
             ldl: ldl,
@@ -284,7 +395,6 @@ struct HealthView: View {
         )
     }
 }
-
 
 struct HealthStatusView: View {
     
@@ -358,13 +468,14 @@ struct HealthDetailPopup: View {
                     
                     ForEach(result.triggeredIssues, id: \.self) { issue in
                         
-                        if let level = result.individualResults[issue] {
+                        if let issueData = result.individualResults[issue] {
                             
                             VStack(alignment: .leading) {
-                                Text("\(issue): \(level.rawValue)")
+                                
+                                Text("\(issue): \(issueData.level.rawValue)")
                                     .bold()
                                 
-                                Text("Advice: ")
+                                Text(issueData.advice)
                                     .foregroundColor(.gray)
                             }
                             .padding(.vertical, 4)
@@ -484,15 +595,49 @@ struct AddHealthEntryView: View {
 
 struct RemindersView: View {
     
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 25) {
+                
+                ForEach(GenerationType.allCases) { generation in
+                    NavigationLink(destination: GenerationReminderView(generation: generation)) {
+                        
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(generation.color.opacity(0.8))
+                                .frame(height: 120)
+                            
+                            Text(generation.rawValue)
+                                .opacity(0.7)
+                                .font(.title2)
+                                .bold()
+                                .foregroundColor(.black)
+                        }
+                        .padding(.horizontal)
+                    }
+                }
+                
+                Spacer()
+            }
+            .navigationTitle("Reminders")
+        }
+    }
+}
+
+struct GenerationReminderView: View {
+    
+    let generation: GenerationType
+    
     @State private var reminders: [ReminderItem] = []
     @State private var showAddReminder = false
     
     var body: some View {
-        NavigationView {
+        ZStack {
+
             VStack {
                 
                 if reminders.isEmpty {
-                    Text("No reminders yet.")
+                    Text("No reminders for \(generation.rawValue).")
                         .foregroundColor(.gray)
                 } else {
                     List {
@@ -513,34 +658,49 @@ struct RemindersView: View {
                     }
                 }
             }
-            .navigationTitle("Reminders")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+            
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    
                     Button {
                         showAddReminder = true
                     } label: {
                         Image(systemName: "plus")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .frame(width: 60, height: 60)
+                            .background(
+                                Circle()
+                                    .fill(Color.blue)
+                                    .shadow(color: .black.opacity(0.2), radius: 5)
+                            )
                     }
+                    .padding()
                 }
             }
-            .onAppear {
-                reminders = ReminderManager.shared.load()
-            }
-            .sheet(isPresented: $showAddReminder) {
-                AddReminderView {
-                    reminders = ReminderManager.shared.load()
-                }
+        }
+        .navigationTitle(generation.rawValue)
+        .onAppear {
+            reminders = ReminderManager.shared.load(for: generation)
+        }
+        .sheet(isPresented: $showAddReminder) {
+            AddReminderView(generation: generation) {
+                reminders = ReminderManager.shared.load(for: generation)
             }
         }
     }
     
     func deleteReminder(at offsets: IndexSet) {
         reminders.remove(atOffsets: offsets)
-        ReminderManager.shared.save(reminders)
+        ReminderManager.shared.save(reminders, for: generation)
     }
 }
 
 struct AddReminderView: View {
+    
+    let generation: GenerationType
     
     @Environment(\.dismiss) var dismiss
     
@@ -589,7 +749,8 @@ struct AddReminderView: View {
             id: UUID(),
             title: title,
             date: date,
-            repeats: repeatOption
+            repeats: repeatOption,
+            generation: generation
         )
         
         var reminders = ReminderManager.shared.load()
