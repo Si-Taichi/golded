@@ -85,11 +85,11 @@ struct TinyWinsView: View {
     var body: some View {
         VStack(spacing: 25) {
             
-            Text("What’s one thing you’re proud of today?")
+            Text("What’s one thing that you did today that you’re proud of?")
                 .font(.title3)
                 .multilineTextAlignment(.center)
             
-            TextField("Write your tiny win...", text: $winText)
+            TextField("Write your win...", text: $winText)
                 .textFieldStyle(.roundedBorder)
             
             Button("Save Win") {

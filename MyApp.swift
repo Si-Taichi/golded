@@ -2,11 +2,12 @@ import SwiftUI
 
 @main
 struct MyApp: App {
+    @AppStorage("appTheme") private var selectedTheme: AppTheme = .system
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding = false
     var body: some Scene {
         WindowGroup {
             if hasCompletedOnboarding {
-                ContentView()
+                ContentView().preferredColorScheme(selectedTheme.colorScheme)
             } else {
                 OnboardingView()
             }
@@ -33,7 +34,7 @@ struct OnboardingView: View {
                 HWStep()
             }
             if currentStep == 4 {
-                FocusStep()
+                GenderStep()
             }
             Spacer()
             Button(action: nextStep) {
@@ -134,16 +135,24 @@ struct HWStep: View {
     }
 }
 
-struct FocusStep: View {
-    @AppStorage("userFocus") var selectedFocus = ""
+struct GenderStep: View {
+    
+    @AppStorage("userGender") private var storedGender: String = Gender.male.rawValue
+    
     var body: some View {
         VStack(spacing: 20) {
-            Text("What would you like to focus on?")
+            
+            Text("Select Your Gender")
                 .font(.title2)
-                .multilineTextAlignment(.center)
-            OptionButton(title: "Mental Health", selected: $selectedFocus)
-            OptionButton(title: "Physical Health", selected: $selectedFocus)
-            OptionButton(title: "Work-Life Balance", selected: $selectedFocus)
+            
+            Picker("Gender", selection: $storedGender) {
+                ForEach(Gender.allCases) { gender in
+                    Text(gender.rawValue)
+                        .tag(gender.rawValue)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding()
         }
     }
 }

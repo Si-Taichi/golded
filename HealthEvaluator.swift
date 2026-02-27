@@ -1,10 +1,5 @@
 import Foundation
 
-enum Gender {
-    case male
-    case female
-}
-
 enum HealthLevel: String {
     case healthy = "Healthy"
     case inRisk = "In Risk"

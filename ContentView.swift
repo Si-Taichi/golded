@@ -81,13 +81,15 @@ struct DashboardView: View {
                 else {
                     Text("You've completed your check-in for this period 💚")
                         .foregroundColor(.gray)
+                    
                 }
                 
                 if showThankYou {
                     Text("Thanks for sharing 💚")
                         .foregroundColor(.gray)
                 }
-                
+                Spacer()
+                QuoteHeaderView()
                 Spacer()
             }
             .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -280,12 +282,15 @@ struct HealthView: View {
                         Text("No health data available.")
                             .foregroundColor(.gray)
                             .padding()
+                        
                     }
                     
                     if entries.isEmpty {
+                        Spacer().frame(maxHeight: 250)
                         Text("No health records yet.")
                             .foregroundColor(.gray)
                             .padding()
+                        Spacer().frame(maxHeight: 70)
                     } else {
                         List {
                             ForEach(entries) { entry in
@@ -367,7 +372,8 @@ struct HealthView: View {
         guard let latest = entries.sorted(by: { $0.date > $1.date }).first else {
             return nil
         }
-        
+        @AppStorage("userGender") var storedGender: String = Gender.male.rawValue
+        let genderEnum = Gender(rawValue: storedGender) ?? .male
         let cholesterol = Double(latest.cholesterol ?? "")
         let hdl = Double(latest.hdl ?? "")
         let ldl = Double(latest.ldl ?? "")
@@ -385,7 +391,7 @@ struct HealthView: View {
         }
         
         return HealthEvaluator.evaluate(
-            gender: .male,
+            gender: genderEnum,
             cholesterol: cholesterol,
             hdl: hdl,
             ldl: ldl,
@@ -518,6 +524,7 @@ struct AddHealthEntryView: View {
     var body: some View {
         NavigationView {
             Form {
+                Text("At least 1 data filled in, so you can save the data.")
                 
                 Section(header: Text("Health Data")) {
                     
@@ -616,10 +623,14 @@ struct RemindersView: View {
                         .padding(.horizontal)
                     }
                 }
-                
                 Spacer()
             }
             .navigationTitle("Reminders")
+            HStack(spacing: 25) {
+                Spacer()
+                Text("You can schedule your activities here and there will be a notification to help you remind.")
+                Spacer()
+            }
         }
     }
 }
@@ -765,13 +776,54 @@ struct AddReminderView: View {
 }
 
 struct SettingsView: View {
+    
+    @AppStorage("appTheme") private var selectedTheme: AppTheme = .system
+    
+    @AppStorage("userName") private var name = ""
+    @AppStorage("userAge") private var age = 45
+    @AppStorage("userHeight") private var height = 170
+    @AppStorage("userWeight") private var weight = 65
+    @AppStorage("userGender") private var gender = Gender.male.rawValue
+    
     var body: some View {
         NavigationView {
-            VStack(spacing: 20) {
-                Text("App Settings")
-                    .font(.title)
+            Form {
+                
+                Section(header: Text("Appearance")) {
+                    Picker("Theme", selection: $selectedTheme) {
+                        ForEach(AppTheme.allCases) { theme in
+                            Text(theme.rawValue)
+                                .tag(theme)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                Section(header: Text("Profile")) {
+                    
+                    TextField("Name", text: $name)
+                    
+                    Stepper("Age: \(age)", value: $age, in: 18...100)
+                    
+                    Stepper("Weight: \(weight) kg", value: $weight, in: 40...150)
+                    
+                    Stepper("Height: \(height) cm", value: $height, in: 120...220)
+                    
+                    Picker("Gender", selection: $gender) {
+                        ForEach(Gender.allCases) { g in
+                            Text(g.rawValue)
+                                .tag(g.rawValue)
+                        }
+                    }
+                }
+    
+                Section {
+                    Button("Restart Onboarding") {
+                        UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
+                    }
+                    .foregroundColor(.red)
+                }
             }
-            .padding()
             .navigationTitle("Settings")
         }
     }
