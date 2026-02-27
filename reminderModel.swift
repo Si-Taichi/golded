@@ -2,9 +2,10 @@ import Foundation
 
 struct ReminderItem: Identifiable, Codable {
     let id: UUID
-    var title: String
-    var date: Date
-    var repeats: RepeatOption
+    let title: String
+    let date: Date
+    let repeats: RepeatOption
+    let generation: GenerationType
 }
 
 enum RepeatOption: String, Codable, CaseIterable {
