@@ -19,9 +19,9 @@ struct ContentView: View {
                     Text("Health")
                 }
             RemindersView()
-                    .tabItem {
-                        Image(systemName: "bell.fill")
-                        Text("Reminders")
+                .tabItem {
+                    Image(systemName: "bell.fill")
+                    Text("Reminders")
                 }
             SettingsView()
                 .tabItem {
@@ -44,7 +44,7 @@ struct DashboardView: View {
     @State private var shouldShowQuestion = false
     @State private var currentQuestionIndex = 0
     @State private var hasAnswered = false
-        
+    
     var body: some View {
         NavigationView {
             VStack(spacing: 25) {
@@ -83,12 +83,12 @@ struct DashboardView: View {
                         .foregroundColor(.gray)
                 }
                 
-            if showThankYou {
-                Text("Thanks for sharing 💚")
-                    .foregroundColor(.gray)
-            }
-            
-            Spacer()
+                if showThankYou {
+                    Text("Thanks for sharing 💚")
+                        .foregroundColor(.gray)
+                }
+                
+                Spacer()
             }
             .transition(.move(edge: .bottom).combined(with: .opacity))
             .animation(.easeInOut(duration: 0.4), value: currentQuestionIndex)
@@ -126,7 +126,7 @@ struct DashboardView: View {
             hasAnswered = true
         }
     }
-
+    
     func titleForPeriod(_ period: CheckInPeriod) -> String {
         switch period {
         case .morning:
@@ -178,6 +178,15 @@ struct HealthView: View {
         NavigationView {
             VStack {
                 
+                if let result = healthResult {
+                    HealthStatusView(result: result).padding(.horizontal)
+                }
+                else {
+                    Text("No health data avaliable.")
+                        .foregroundColor(.gray)
+                        .padding()
+                }
+                
                 if entries.isEmpty {
                     Text("No health records yet.")
                         .foregroundColor(.gray)
@@ -198,8 +207,20 @@ struct HealthView: View {
                                     Text("Blood Pressure: \(pressure)")
                                 }
                                 
-                                if let fat = entry.bodyFat {
-                                    Text("Body Fat: \(fat)%")
+                                if let cholesterol = entry.cholesterol {
+                                    Text("Total Cholesterol: \(cholesterol)")
+                                }
+                                
+                                if let hdl = entry.hdl {
+                                    Text("HDL: \(hdl)")
+                                }
+                                
+                                if let ldl = entry.ldl {
+                                    Text("LDL: \(ldl)")
+                                }
+                                
+                                if let triglyceride = entry.triglyceride {
+                                    Text("Triglyceride: \(triglyceride)")
                                 }
                                 
                                 Text("BMI: \(String(format: "%.1f", entry.bmi))")
@@ -229,6 +250,135 @@ struct HealthView: View {
             }
         }
     }
+    var healthResult: HealthResult? {
+        
+        guard let latest = entries.sorted(by: { $0.date > $1.date }).first,
+              let cholesterol = Double(latest.cholesterol ?? ""),
+              let hdl = Double(latest.hdl ?? ""),
+              let ldl = Double(latest.ldl ?? ""),
+              let triglyceride = Double(latest.triglyceride ?? "")
+        else {
+            return nil
+        }
+        
+        // Split blood pressure
+        var systolic: Double = 0
+        var diastolic: Double = 0
+        
+        if let bp = latest.bloodPressure {
+            let parts = bp.split(separator: "/")
+            if parts.count == 2 {
+                systolic = Double(parts[0]) ?? 0
+                diastolic = Double(parts[1]) ?? 0
+            }
+        }
+        
+        return HealthEvaluator.evaluate(
+            gender: .male, // 🔥 change later to real stored gender
+            cholesterol: cholesterol,
+            hdl: hdl,
+            ldl: ldl,
+            triglyceride: triglyceride,
+            systolic: systolic,
+            diastolic: diastolic
+        )
+    }
+}
+
+
+struct HealthStatusView: View {
+    
+    @State private var showPopup = false
+    
+    let result: HealthResult
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            
+            Text("Your Health Status")
+                .font(.headline)
+            
+            Text(result.overallStatus.rawValue)
+                .font(.largeTitle)
+                .bold()
+                .foregroundColor(statusColor)
+            
+            Button {
+                showPopup = true
+            } label: {
+                Text("More Info")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.horizontal)
+            .sheet(isPresented: $showPopup) {
+                HealthDetailPopup(result: result)
+            }
+            
+        }
+        .padding()
+        .sheet(isPresented: $showPopup) {
+            HealthDetailPopup(result: result)
+        }
+    }
+    
+    var statusColor: Color {
+        switch result.overallStatus {
+        case .healthy:
+            return .green
+        case .inRisk:
+            return .orange
+        case .danger:
+            return .red
+        }
+    }
+}
+
+struct HealthDetailPopup: View {
+    
+    let result: HealthResult
+    
+    var body: some View {
+        NavigationView {
+            VStack(alignment: .leading, spacing: 16) {
+                
+                if result.overallStatus == .healthy {
+                    
+                    Text("🎉 Keep up the good work!")
+                        .font(.title2)
+                        .bold()
+                    
+                    Text("All your health markers are within healthy range.")
+                    
+                } else {
+                    
+                    Text("⚠ Areas That Need Attention")
+                        .font(.title2)
+                        .bold()
+                    
+                    ForEach(result.triggeredIssues, id: \.self) { issue in
+                        
+                        if let level = result.individualResults[issue] {
+                            
+                            VStack(alignment: .leading) {
+                                Text("\(issue): \(level.rawValue)")
+                                    .bold()
+                                
+                                Text("Advice: ")
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(.vertical, 4)
+                        }
+                    }
+                }
+                
+                Spacer()
+            }
+            .padding()
+            .navigationTitle("Health Details")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
 }
 
 struct AddHealthEntryView: View {
@@ -240,7 +390,10 @@ struct AddHealthEntryView: View {
     
     @State private var bloodSugar = ""
     @State private var bloodPressure = ""
-    @State private var bodyFat = ""
+    @State private var cholesterol = ""
+    @State private var hdl = ""
+    @State private var ldl = ""
+    @State private var triglyceride = ""
     @State private var showAlert = false
     
     var onSave: () -> Void
@@ -262,8 +415,19 @@ struct AddHealthEntryView: View {
                     
                     TextField("Blood Pressure (e.g. 120/80)", text: $bloodPressure)
                     
-                    TextField("Body Fat (%)", text: $bodyFat)
+                    TextField("Total cholesterol (mg/dL)", text: $cholesterol)
                         .keyboardType(.decimalPad)
+                    
+                    TextField("HDL (mg/dL)", text: $hdl)
+                        .keyboardType(.decimalPad)
+                    
+                    TextField("LDL (mg/dL)", text: $ldl)
+                        .keyboardType(.decimalPad)
+                    
+                    TextField("Triglyceride (mg/dL)", text: $triglyceride)
+                        .keyboardType(.decimalPad)
+                    
+                    
                     
                     HStack {
                         Text("BMI")
@@ -296,7 +460,7 @@ struct AddHealthEntryView: View {
     
     func saveEntry() {
         
-        if bloodSugar.isEmpty && bloodPressure.isEmpty && bodyFat.isEmpty {
+        if bloodSugar.isEmpty && bloodPressure.isEmpty && cholesterol.isEmpty && hdl.isEmpty && ldl.isEmpty && triglyceride.isEmpty {
             showAlert = true
             return
         }
@@ -305,7 +469,10 @@ struct AddHealthEntryView: View {
             date: Date(),
             bloodSugar: bloodSugar.isEmpty ? nil : bloodSugar,
             bloodPressure: bloodPressure.isEmpty ? nil : bloodPressure,
-            bodyFat: bodyFat.isEmpty ? nil : bodyFat,
+            cholesterol: cholesterol.isEmpty ? nil : cholesterol,
+            hdl: hdl.isEmpty ? nil : hdl,
+            ldl: ldl.isEmpty ? nil : ldl,
+            triglyceride: triglyceride.isEmpty ? nil : triglyceride,
             bmi: bmi
         )
         
